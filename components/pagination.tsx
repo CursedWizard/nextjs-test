@@ -1,3 +1,4 @@
+import {memo} from "react"
 import {ArrowBackIcon, ArrowForwardIcon} from "@chakra-ui/icons";
 import {Heading, IconButton, Text, Stack} from "@chakra-ui/react"
 
@@ -8,7 +9,7 @@ type PaginationProps = {
     canPreviousPage: boolean;
     canNextPage: boolean;
   }
-export const Pagination: React.FC<PaginationProps> = ({
+export const Pagination: React.FC<PaginationProps> = memo(({
   page,
   previousPage,
   nextPage,
@@ -43,4 +44,4 @@ export const Pagination: React.FC<PaginationProps> = ({
       />
     </Stack>
   );
-};
+});

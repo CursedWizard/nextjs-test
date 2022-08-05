@@ -24,6 +24,8 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
       onChange={onChange}
       value={value}
       useBasicStyles
+      menuShouldScrollIntoView={true}
+      captureMenuScroll={true}
     />
   );
 };

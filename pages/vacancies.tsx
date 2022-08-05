@@ -1,26 +1,19 @@
-import {Box, Button, CircularProgress, Code, Flex, FormControl, FormLabel, Heading, IconButton, Link, Stack, Text} from '@chakra-ui/react'
+import {Box, CircularProgress, Flex, Heading, HStack, Link, Stack, Text} from '@chakra-ui/react'
 import type { NextPage } from 'next'
-import {PropsWithChildren, useEffect, useMemo} from 'react';
+import {useEffect} from 'react';
 import {
-  Select,
-  CreatableSelect,
-  AsyncSelect,
-  OptionBase,
-  GroupBase
-} from "chakra-react-select";
-import {PlaceType, useProcessedVacanciesData, useVacanciesData, VacancyType} from '../utils/useVacanciesData';
+  OptionBase} from "chakra-react-select";
+import {useProcessedVacanciesData, VacancyType} from '../utils/useVacanciesData';
 import {usePaginatedData} from '../utils/usePaginatedData';
-import {Card} from '../components/card';
 import {VacanciesList} from '../components/vacancies/vacancies';
-import {ArrowBackIcon, ArrowForwardIcon} from '@chakra-ui/icons';
-import {CategorySelect} from '../components/vacancies/select';
 import {Pagination} from '../components/pagination';
+import {CategoryPanel} from '../components/vacancies/category-panel';
 
 const MAX_WIDTH = '1240px';
 
 const HeaderBar = () => {
   return (
-    <Box px={6} w="full">
+    <Box w="full">
       <Flex
         mx="auto"
         maxW={MAX_WIDTH}
@@ -28,152 +21,40 @@ const HeaderBar = () => {
         alignItems="center"
         justifyContent="space-between"
       >
-        <Text>React solution</Text>
-        <Link color="teal" href="#">Go to Vue solution</Link>
+        <HStack align="center">
+          <img src="react.png" alt="react" width="20px" height="20px" />
+
+          <Text>React solution</Text>
+        </HStack>
+        <Link color="teal" href="#">
+          <HStack align="center">
+            <img src="github.svg" alt="react" width="20px" height="20px" />
+            <Text>Source code</Text>
+          </HStack>
+        </Link>
       </Flex>
     </Box>
   );
 }
 
-interface EntityType extends OptionBase {
-  label: string;
-  value: string | number;
-}
-
 const Vacancies: NextPage = () => {
   const {
     isLoading,
-    cities,
-    regions,
-    currentRegion,
-    currentCity,
-    currentClient,
-    setClient,
-    setRegion,
-    reset,
-    setCity,
     vacancies,
-    clients,
     error,
+    ...rest
   } = useProcessedVacanciesData();
-
-  const {
-    data: paginatedData,
-    canNextPage,
-    canPreviousPage,
-    nextPage,
-    previousPage,
-    paginationInfo,
-  } = usePaginatedData<VacancyType>({
-    initialData: vacancies,
-    pageSize: 6,
-  });
-
-  useEffect(() => {
-    if (vacancies) console.log(vacancies);
-  }, [vacancies]);
 
   useEffect(() => {
     error && console.error(error);
-    // cities && console.debug(cities);
-    // regions && console.debug(regions);
-
-    // vacancies && console.debug(vacancies);
-  }, [regions, vacancies, cities, isLoading, error]);
-
-  const autoCompleteCities = useMemo(() => {
-    return cities.map((city) => {
-      return {
-        label: city.cityName,
-        value: city.cityIndex,
-      }
-    })
-  }, [cities]);
-
-  const autoCompleteClients = useMemo(() => {
-    return clients.map((client) => {
-      return {
-        label: client.name,
-        value: client.index,
-      };
-    });
-  }, [clients]);
+  }, [error]);
 
   return (
-    <Box>
+    <Box px={12}>
       <HeaderBar />
-      <Box px={6} maxW={MAX_WIDTH} mx="auto">
+      <Box maxW={MAX_WIDTH} mx="auto">
         <Flex direction="row" gap={8} py={4}>
-          <Stack spacing={4} display={["none", "none", "flex"]}>
-            <Heading fontSize="24px">Поиск по категориям</Heading>
-            <Card w="290px" borderRadius={8} py={4} px={6}>
-              <Stack spacing={4}>
-                <FormControl>
-                  <FormLabel>Регион</FormLabel>
-                  <CategorySelect
-                    id="region-select"
-                    options={regions.map((region) => ({
-                      label: region.regionName,
-                      value: region.regionIndex,
-                    }))}
-                    placeholder="Выберите регион"
-                    onChange={(e) =>
-                      e && setRegion({ name: e.label, index: Number(e.value) })
-                    }
-                    value={
-                      currentRegion && {
-                        label: currentRegion.name,
-                        value: currentRegion.index,
-                      }
-                    }
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Город</FormLabel>
-                  <CategorySelect
-                    id="city-select"
-                    options={autoCompleteCities}
-                    placeholder="Выберите город"
-                    onChange={(e) =>
-                      e && setCity({ name: e.label, index: Number(e.value) })
-                    }
-                    value={
-                      currentCity && {
-                        value: currentCity.index,
-                        label: currentCity.name,
-                      }
-                    }
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>Организация</FormLabel>
-                  <CategorySelect
-                    id="client-select"
-                    options={autoCompleteClients}
-                    value={
-                      currentClient && {
-                        value: currentClient.index,
-                        label: currentClient.name,
-                      }
-                    }
-                    onChange={(e) =>
-                      e && setClient({ name: e.label, index: Number(e.value) })
-                    }
-                    placeholder="Выберите организацию"
-                  />
-                </FormControl>
-              </Stack>
-              <Button
-                colorScheme="orange"
-                mt={8}
-                w="100%"
-                variant="outline"
-                onClick={() => reset()}
-              >
-                Сбросить
-              </Button>
-            </Card>
-          </Stack>
+          <CategoryPanel error={error} isLoading={isLoading} {...rest} />
           <Stack spacing={4} width="full">
             {isLoading ? (
               <CircularProgress
@@ -190,14 +71,7 @@ const Vacancies: NextPage = () => {
                   Найдено вакансий: {vacancies.length}
                 </Heading>
 
-                <VacanciesList vacancies={paginatedData} />
-                <Pagination
-                  canNextPage={canNextPage}
-                  canPreviousPage={canPreviousPage}
-                  nextPage={nextPage}
-                  previousPage={previousPage}
-                  page={paginationInfo.page}
-                />
+                <VacanciesList vacancies={vacancies} />
               </>
             )}
           </Stack>

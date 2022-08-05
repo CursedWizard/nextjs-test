@@ -69,12 +69,19 @@ type CityID = number;
 type CityMapData = {
   cityName: string;
 
+  /**
+   * Region index the city belongs to
+   */
   regionIndex: number;
 
   cityIndex: number;
 
+  /**
+   * Store vacancies by city
+   */
   vacancies: VacanciesType;
 
+  // TODO: should be removed (bad for scaling)
   clients: Set<number>;
 }
 
@@ -103,16 +110,6 @@ type ProcessedData = {
 }
 
 type Nullable<T> = { [P in keyof T]?: T[P] | null };
-const filterVacancies = (vacancies: VacanciesType, filterBy: Nullable<VacancyType>) => {
-  return vacancies.filter((vacancy) => {
-    return Object.keys(filterBy).every((key) => {
-      // @ts-ignore
-      if (filterBy[key] === null || filterBy[key] === undefined) return true;
-      // @ts-ignore
-      return vacancy[key] === filterBy[key];
-    });
-  });
-}
 
 export const useProcessedVacanciesData = () => {
   const { data: allVacancies, ...rest } = useVacanciesData();
@@ -127,12 +124,36 @@ export const useProcessedVacanciesData = () => {
     availableClients: [],
   });
 
+  /**
+   * General utility to filter vacancies by any
+   * property of the vacancy object (except city or region)
+   */
+  const filterVacancies = (vacancies: VacanciesType) => {
+    const filterBy: Nullable<VacancyType> = {
+      clientid: processedData.currentClient?.index,
+    };
+    return vacancies.filter((vacancy) => {
+      return Object.keys(filterBy).every((key) => {
+        // @ts-ignore
+        if (filterBy[key] === null || filterBy[key] === undefined) return true;
+        // @ts-ignore
+        return vacancy[key] === filterBy[key];
+      });
+    });
+  };
+
+  /**
+   * Store in ref to avoid recomputing
+   */
   const maps = useRef<{
     cities: Map<RegionID, CityMapData>;
     regions: Map<RegionID, RegionMapData>;
     clients: Map<number, string>;
   } | null>(null);
 
+  /**
+   * TODO: should be removed (bad for scaling)
+   */
   const getClientsByRegion = (region: RegionMapData): Array<PlaceType> => {
     const clients: Set<number> = new Set();
     region.cities.forEach((cityId) => {
@@ -146,7 +167,7 @@ export const useProcessedVacanciesData = () => {
         name: maps.current!.clients.get(clientId)!,
         index: clientId,
       };
-    })
+    });
   };
 
   const getAllClients = (): Array<PlaceType> => {
@@ -157,8 +178,7 @@ export const useProcessedVacanciesData = () => {
       const regionClients = getClientsByRegion(region);
       regionClients.forEach((client) => {
         clients.add(client.index);
-      }
-      );
+      });
     });
 
     return Array.from(clients).map((clientId) => {
@@ -166,7 +186,7 @@ export const useProcessedVacanciesData = () => {
         name: maps.current!.clients.get(clientId)!,
         index: clientId,
       };
-    })
+    });
   };
 
   const setRegion = useCallback(
@@ -192,6 +212,12 @@ export const useProcessedVacanciesData = () => {
         return city;
       });
 
+      /**
+       * logic of generating autocompletion for filters probalby
+       * should be a responsibility of a filter method
+       * since it already loops through all the vacancies
+       * TODO: move to filter vacancy method
+       */
       const availableClients = getClientsByRegion(mappedRegion);
 
       setProcessedData((prevState) => ({
@@ -214,10 +240,10 @@ export const useProcessedVacanciesData = () => {
     setProcessedData((prevState) => ({
       ...prevState,
       currentCity: city,
-        availableClients: Array.from(mappedCity.clients.values()).map((id) => ({
-          name: maps.current!.clients.get(id)!,
-          index: id,
-        })),
+      availableClients: Array.from(mappedCity.clients.values()).map((id) => ({
+        name: maps.current!.clients.get(id)!,
+        index: id,
+      })),
     }));
   }, []);
 
@@ -274,9 +300,7 @@ export const useProcessedVacanciesData = () => {
 
       setProcessedData((prevState) => ({
         ...prevState,
-        vacancies: filterVacancies(mappedCity.vacancies, {
-          clientid: processedData.currentClient?.index,
-        }),
+        vacancies: filterVacancies(mappedCity.vacancies),
       }));
     } else if (processedData.currentRegion) {
       const mappedRegion = maps.current.regions.get(
@@ -292,18 +316,14 @@ export const useProcessedVacanciesData = () => {
 
       setProcessedData((prevState) => ({
         ...prevState,
-        vacancies: filterVacancies(regionVacancies, {
-          clientid: processedData.currentClient?.index,
-        }),
+        vacancies: filterVacancies(regionVacancies),
       }));
     } else {
       if (!allVacancies) return;
 
       setProcessedData((prevState) => ({
         ...prevState,
-        vacancies: filterVacancies(allVacancies, {
-          clientid: processedData.currentClient?.index,
-        }),
+        vacancies: filterVacancies(allVacancies),
       }));
     }
   }, [
@@ -313,7 +333,7 @@ export const useProcessedVacanciesData = () => {
   ]);
 
   /**
-   * On mount hook to normilize data by
+   * Onmount hook to normilize data by
    * creating dedicated maps
    */
   useEffect(() => {

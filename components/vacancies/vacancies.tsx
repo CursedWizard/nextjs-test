@@ -25,15 +25,20 @@ import {
 import {isError} from "@tanstack/react-query";
 import {Field, Formik, useFormik} from "formik";
 import {merge} from "lodash";
+import {usePaginatedData} from '../../utils/usePaginatedData';
+
+
 import React from "react";
 import {z} from "zod";
+import {normalizeInput} from "../../utils/format-phone";
 import {createValidationError, toFormikValidationSchema} from "../../utils/formik-validation-schema";
 import {VacancyType} from "../../utils/useVacanciesData";
 import {Card} from "../card";
+import {Pagination} from "../pagination";
 
 export type VacancyCardProps = {
   vacancy: VacancyType;
-  onOpen: () => void;
+  onOpen: (vacancy: VacancyType) => void;
 };
 
 const getKnownSalary = (vacancy: VacancyType) => {
@@ -77,7 +82,7 @@ export const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, onOpen }) => 
         <Button variant="outline">
           Подробнее
         </Button>
-        <Button variant="solid" colorScheme="orange" onClick={onOpen}>Откликнуться!</Button>
+        <Button variant="solid" colorScheme="orange" onClick={() => onOpen(vacancy)}>Откликнуться!</Button>
       </Stack>
       </Flex>
     </Card>
@@ -88,63 +93,7 @@ export type VacanciesProps = {
   vacancies: VacancyType[];
 };
 
-const phoneRegExp = /^(\+?\d{0,4})?\s?-?\s?(\(?\d{3}\)?)\s?-?\s?(\(?\d{3}\)?)\s?-?\s?(\(?\d{4}\)?)?$/
-const normilizePhoneNumber = (phone: string) => {
-  let res = ""
-  if (phone.length > 0)
-    res += `+${phone[0]} `
-
-  if (phone.length > 1)
-    res += `(${phone[1]}`
-
-  if (phone.length > 2)
-    res += `${phone[2]}`
-
-  if (phone.length > 3)
-    res += `${phone[3]}) `
-
-  if (phone.length > 4)
-    res += `${phone[4]}`
-
-  if (phone.length > 5)
-    res += `${phone[5]}`
-
-  if (phone.length > 6)
-    res += `${phone[6]}-`
-
-  if (phone.length > 7)
-    res += `${phone[7]}`
-
-  if (phone.length > 8)
-    res += `${phone[8]}-`
-
-  if (phone.length > 9)
-    res += `${phone[9]}`
-
-  if (phone.length > 10)
-    res += `${phone[10]}`
-
-  return res;
-}
-
-const normalizeInput = (value: string, previousValue: string) => {
-  if (!value) return ""; 
-
-  // only allows 0-9 inputs
-  const numberedCurrentValue = value.replace(/[^\d]/g, '');
-  if (numberedCurrentValue.length > 11)
-    return previousValue;
-
-  if (previousValue.length > value.length && !/\d/g.test(previousValue[previousValue.length - 1])) {
-      return normilizePhoneNumber(
-        numberedCurrentValue.slice(0, numberedCurrentValue.length - 1)
-      );
-    }
-
-  return normilizePhoneNumber(numberedCurrentValue);
-};
-
-export const ApplySchema = z.object({
+export const applyForSchema = z.object({
   lastName: z.string().min(1, "Поле не должно быть пустым"),
   firstName: z.string().min(1, "Поле не должно быть пустым"),
   parentName: z.string().optional(),
@@ -153,6 +102,9 @@ export const ApplySchema = z.object({
 
 export const VacanciesList: React.FC<VacanciesProps> = ({ vacancies }) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const [clickedVacancy, setClickedVacancy] = React.useState<VacancyType | null>(null);
+  const [phoneValue, setPhoneValue] = React.useState("");
+  const [agreePersonalData, setAgreePersonalData] = React.useState(false);
   const cancelRef = React.useRef(null)
 
   const {handleSubmit, errors, touched, values, handleChange} = useFormik({
@@ -165,38 +117,79 @@ export const VacanciesList: React.FC<VacanciesProps> = ({ vacancies }) => {
     validate: (values) =>
       toFormikValidationSchema(
         merge(values, { phoneNumber: phoneValue }),
-        ApplySchema
+        applyForSchema
       ),
     onSubmit: (values) => {
-      alert(JSON.stringify(values, null, 2));
+      alert(
+        `Вы откликнулись: \n\n ${JSON.stringify(
+          merge(values, {
+            vacancy_id: clickedVacancy!.vacancy_id,
+            vacancy_name: clickedVacancy!.proftitle,
+          }),
+          null,
+          2
+        )}`
+      );
     },
   });
 
-  const [phoneValue, setPhoneValue] = React.useState("");
-  const [agreePersonalData, setAgreePersonalData] = React.useState(false);
+
+  const handleCardOpen = (vacancy: VacancyType) => {
+    onOpen();
+    setClickedVacancy(vacancy);
+  }
+
+  const handleCloseModal = () => {
+    onClose();
+    setClickedVacancy(null);
+  }
+
+  const {
+    data: paginatedData,
+    canNextPage,
+    canPreviousPage,
+    nextPage,
+    previousPage,
+    paginationInfo,
+  } = usePaginatedData<VacancyType>({
+    initialData: vacancies,
+    pageSize: 6,
+  });
+
+  const handleNextPage = () => {
+    nextPage();
+    window.scrollTo({ top: 0 });
+  };
+
+  const handlePrevPage = () => {
+    previousPage();
+    window.scrollTo({ top: 0 });
+  };
 
   return (
     <>
-      <SimpleGrid
-        maxWidth="870px"
-        columns={[1, null, null, 2, 3]}
-        spacingX={4}
-        spacingY={4}
-      >
-        {vacancies.map((vacancy, index) => {
+      <SimpleGrid columns={[1, null, null, 2, 3]} spacingX={4} spacingY={4}>
+        {paginatedData.map((vacancy, index) => {
           return (
             <VacancyCard
-              onOpen={onOpen}
+              onOpen={handleCardOpen}
               vacancy={vacancy}
               key={`vac-card-${index}`}
             />
           );
         })}
       </SimpleGrid>
+      <Pagination
+        canNextPage={canNextPage}
+        canPreviousPage={canPreviousPage}
+        nextPage={handleNextPage}
+        previousPage={handlePrevPage}
+        page={paginationInfo.page}
+      />
       <AlertDialog
         motionPreset="slideInBottom"
         leastDestructiveRef={cancelRef}
-        onClose={onClose}
+        onClose={handleCloseModal}
         isOpen={isOpen}
         isCentered
       >
