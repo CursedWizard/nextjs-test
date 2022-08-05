@@ -45,3 +45,5 @@ export const Pagination: React.FC<PaginationProps> = memo(({
     </Stack>
   );
 });
+
+Pagination.displayName = "Pagination";

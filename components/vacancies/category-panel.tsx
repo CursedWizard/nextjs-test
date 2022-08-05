@@ -117,3 +117,5 @@ export const CategoryPanel: React.FC<CategoryPanelProps> = memo((props) => {
     </Stack>
   );
 });
+
+CategoryPanel.displayName = "CategoryPanel";

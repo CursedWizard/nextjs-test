@@ -1,5 +1,6 @@
 import {Box, CircularProgress, Flex, Heading, HStack, Link, Stack, Text} from '@chakra-ui/react'
 import type { NextPage } from 'next'
+import Image from 'next/image';
 import {useEffect} from 'react';
 import {
   OptionBase} from "chakra-react-select";
@@ -22,13 +23,13 @@ const HeaderBar = () => {
         justifyContent="space-between"
       >
         <HStack align="center">
-          <img src="react.png" alt="react" width="20px" height="20px" />
+          <Image src="/react.png" alt="react" width="20px" height="20px" />
 
           <Text>React solution</Text>
         </HStack>
         <Link color="teal" href="#">
           <HStack align="center">
-            <img src="github.svg" alt="react" width="20px" height="20px" />
+            <Image src="/github.svg" alt="react" width="20px" height="20px" />
             <Text>Source code</Text>
           </HStack>
         </Link>
