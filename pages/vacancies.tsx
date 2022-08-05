@@ -1,6 +1,6 @@
-import {Box, Code, Flex, FormControl, FormLabel, Heading, Link, Stack, Text} from '@chakra-ui/react'
+import {Box, Button, CircularProgress, Code, Flex, FormControl, FormLabel, Heading, IconButton, Link, Stack, Text} from '@chakra-ui/react'
 import type { NextPage } from 'next'
-import {PropsWithChildren} from 'react';
+import {PropsWithChildren, useEffect, useMemo} from 'react';
 import {
   Select,
   CreatableSelect,
@@ -8,13 +8,22 @@ import {
   OptionBase,
   GroupBase
 } from "chakra-react-select";
+import {PlaceType, useProcessedVacanciesData, useVacanciesData, VacancyType} from '../utils/useVacanciesData';
+import {usePaginatedData} from '../utils/usePaginatedData';
+import {Card} from '../components/card';
+import {VacanciesList} from '../components/vacancies/vacancies';
+import {ArrowBackIcon, ArrowForwardIcon} from '@chakra-ui/icons';
+import {CategorySelect} from '../components/vacancies/select';
+import {Pagination} from '../components/pagination';
+
+const MAX_WIDTH = '1240px';
 
 const HeaderBar = () => {
   return (
-    <Box px={9} w="full">
+    <Box px={6} w="full">
       <Flex
         mx="auto"
-        maxW="1170px"
+        maxW={MAX_WIDTH}
         height="100px"
         alignItems="center"
         justifyContent="space-between"
@@ -26,96 +35,171 @@ const HeaderBar = () => {
   );
 }
 
-const Card: React.FC<PropsWithChildren<any>> = ({ children }) => {
-  return (
-    <Box borderRadius={8} px={2} w="300px" shadow="base">
-      {children}
-    </Box>
-  );
-};
-export const colorOptions = [
-  { value: "blue", label: "Blue", color: "#0052CC" },
-  { value: "purple", label: "Purple", color: "#5243AA" },
-  { value: "red", label: "Red", color: "#FF5630" },
-  { value: "orange", label: "Orange", color: "#FF8B00" },
-  { value: "yellow", label: "Yellow", color: "#FFC400" },
-  { value: "green", label: "Green", color: "#36B37E" }
-];
-export const flavorOptions = [
-  { value: "vanilla", label: "Vanilla", rating: "safe" },
-  { value: "chocolate", label: "Chocolate", rating: "good" },
-  { value: "strawberry", label: "Strawberry", rating: "wild" },
-  { value: "salted-caramel", label: "Salted Caramel", rating: "crazy" }
-];
-export const groupedOptions = [
-  {
-    label: "Colours",
-    options: colorOptions
-  },
-  {
-    label: "Flavours",
-    options: flavorOptions
-  }
-];
-
-interface FlavorOrColorOption extends OptionBase {
+interface EntityType extends OptionBase {
   label: string;
-  value: string;
-  color?: string;
-  rating?: string;
+  value: string | number;
 }
 
-
 const Vacancies: NextPage = () => {
+  const {
+    isLoading,
+    cities,
+    regions,
+    currentRegion,
+    currentCity,
+    currentClient,
+    setClient,
+    setRegion,
+    reset,
+    setCity,
+    vacancies,
+    clients,
+    error,
+  } = useProcessedVacanciesData();
+
+  const {
+    data: paginatedData,
+    canNextPage,
+    canPreviousPage,
+    nextPage,
+    previousPage,
+    paginationInfo,
+  } = usePaginatedData<VacancyType>({
+    initialData: vacancies,
+    pageSize: 6,
+  });
+
+  useEffect(() => {
+    if (vacancies) console.log(vacancies);
+  }, [vacancies]);
+
+  useEffect(() => {
+    error && console.error(error);
+    // cities && console.debug(cities);
+    // regions && console.debug(regions);
+
+    // vacancies && console.debug(vacancies);
+  }, [regions, vacancies, cities, isLoading, error]);
+
+  const autoCompleteCities = useMemo(() => {
+    return cities.map((city) => {
+      return {
+        label: city.cityName,
+        value: city.cityIndex,
+      }
+    })
+  }, [cities]);
+
+  const autoCompleteClients = useMemo(() => {
+    return clients.map((client) => {
+      return {
+        label: client.name,
+        value: client.index,
+      };
+    });
+  }, [clients]);
+
   return (
     <Box>
       <HeaderBar />
-      <Box maxW="1170px" mx="auto">
-        <Flex dir="row">
-          <Stack>
-            <Heading size="md">Поиск по категориям</Heading>
-            <Card>
-            <Stack p={4} spacing={4}>
-              <FormControl>
-                <FormLabel>
-                  Регион
-                </FormLabel>
-                <Select<
-                  FlavorOrColorOption,
-                  false,
-                  GroupBase<FlavorOrColorOption>
-                >
-                  id="color-select"
-                  name="colors"
-                  options={groupedOptions}
-                  placeholder="Выберите регион"
-                  closeMenuOnSelect={true}
-                  size="md"
-                  // focusBorderColor="green.500"
-                  useBasicStyles
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>
-                  Город
-                </FormLabel>
-                <Select<
-                  FlavorOrColorOption,
-                  false,
-                  GroupBase<FlavorOrColorOption>
-                >
-                  id="color-select"
-                  name="colors"
-                  options={groupedOptions}
-                  placeholder="Выберите город"
-                  closeMenuOnSelect={true}
-                  size="md"
-                  // focusBorderColor="green.500"
-                  useBasicStyles
-                />
-              </FormControl>
+      <Box px={6} maxW={MAX_WIDTH} mx="auto">
+        <Flex direction="row" gap={8} py={4}>
+          <Stack spacing={4} display={["none", "none", "flex"]}>
+            <Heading fontSize="24px">Поиск по категориям</Heading>
+            <Card w="290px" borderRadius={8} py={4} px={6}>
+              <Stack spacing={4}>
+                <FormControl>
+                  <FormLabel>Регион</FormLabel>
+                  <CategorySelect
+                    id="region-select"
+                    options={regions.map((region) => ({
+                      label: region.regionName,
+                      value: region.regionIndex,
+                    }))}
+                    placeholder="Выберите регион"
+                    onChange={(e) =>
+                      e && setRegion({ name: e.label, index: Number(e.value) })
+                    }
+                    value={
+                      currentRegion && {
+                        label: currentRegion.name,
+                        value: currentRegion.index,
+                      }
+                    }
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Город</FormLabel>
+                  <CategorySelect
+                    id="city-select"
+                    options={autoCompleteCities}
+                    placeholder="Выберите город"
+                    onChange={(e) =>
+                      e && setCity({ name: e.label, index: Number(e.value) })
+                    }
+                    value={
+                      currentCity && {
+                        value: currentCity.index,
+                        label: currentCity.name,
+                      }
+                    }
+                  />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Организация</FormLabel>
+                  <CategorySelect
+                    id="client-select"
+                    options={autoCompleteClients}
+                    value={
+                      currentClient && {
+                        value: currentClient.index,
+                        label: currentClient.name,
+                      }
+                    }
+                    onChange={(e) =>
+                      e && setClient({ name: e.label, index: Number(e.value) })
+                    }
+                    placeholder="Выберите организацию"
+                  />
+                </FormControl>
               </Stack>
+              <Button
+                colorScheme="orange"
+                mt={8}
+                w="100%"
+                variant="outline"
+                onClick={() => reset()}
+              >
+                Сбросить
+              </Button>
             </Card>
+          </Stack>
+          <Stack spacing={4} width="full">
+            {isLoading ? (
+              <CircularProgress
+                alignSelf="center"
+                mt={8}
+                isIndeterminate
+                size="100px"
+                thickness="4px"
+                color="green.400"
+              />
+            ) : (
+              <>
+                <Heading fontSize="24px">
+                  Найдено вакансий: {vacancies.length}
+                </Heading>
+
+                <VacanciesList vacancies={paginatedData} />
+                <Pagination
+                  canNextPage={canNextPage}
+                  canPreviousPage={canPreviousPage}
+                  nextPage={nextPage}
+                  previousPage={previousPage}
+                  page={paginationInfo.page}
+                />
+              </>
+            )}
           </Stack>
         </Flex>
       </Box>
