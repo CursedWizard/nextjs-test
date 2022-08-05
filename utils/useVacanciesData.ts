@@ -230,8 +230,20 @@ export const useProcessedVacanciesData = () => {
     []
   );
 
-  const setCity = useCallback((city: PlaceType) => {
+  const setCity = useCallback((city: PlaceType | null) => {
     if (!maps.current) return;
+    if (!city) {
+      const mappedRegion = maps.current.regions.get(
+        processedData.currentRegion?.index!
+      );
+      setProcessedData((prevState) => ({
+        ...prevState,
+        currentCity: null,
+        availableClients: getClientsByRegion(mappedRegion!),
+      }));
+      return;
+    }
+
     const mappedCity = maps.current.cities.get(city.index);
     invariant(mappedCity, "City doesn't exist");
 

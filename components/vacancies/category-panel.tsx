@@ -5,9 +5,9 @@ import {
   Heading,
   Stack,
 } from "@chakra-ui/react";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { Card } from "../card";
-import { CategorySelect } from "./select";
+import { CategorySelect, EntityType } from "./select";
 import { useProcessedVacanciesData } from "../../utils/useVacanciesData";
 
 type CategoryPanelProps = Omit<ReturnType<typeof useProcessedVacanciesData>, "vacancies"> & {};
@@ -44,6 +44,14 @@ export const CategoryPanel: React.FC<CategoryPanelProps> = memo((props) => {
     });
   }, [clients]);
 
+  const handleCitySelect = (city: EntityType) => {
+      setCity({ index: Number(city.value), name: city.label });
+    }
+  const handleClientSelect = (e: EntityType) => {
+    if (e.value === currentClient?.index) setClient(null);
+    else setClient({ name: e.label, index: Number(e.value) });
+  };
+
   return (
     <Stack spacing={4} display={["none", "none", "flex"]}>
       <Heading fontSize="24px">Поиск по категориям</Heading>
@@ -76,7 +84,7 @@ export const CategoryPanel: React.FC<CategoryPanelProps> = memo((props) => {
               options={autoCompleteCities}
               placeholder="Выберите город"
               onChange={(e) =>
-                e && setCity({ name: e.label, index: Number(e.value) })
+                e && handleCitySelect(e)
               }
               value={
                 currentCity && {
@@ -98,9 +106,18 @@ export const CategoryPanel: React.FC<CategoryPanelProps> = memo((props) => {
                 }
               }
               onChange={(e) =>
-                e && setClient({ name: e.label, index: Number(e.value) })
+                e &&
+                handleClientSelect({ label: e.label, value: Number(e.value) })
               }
               placeholder="Выберите организацию"
+              chakraStyles={{
+                option: (provided, state) => {
+                  return {
+                    ...provided,
+                    _hover: {background: state.isSelected ? "red.400" : "grey.200"},
+                  };
+                },
+              }}
             />
           </FormControl>
         </Stack>
