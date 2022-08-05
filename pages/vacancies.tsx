@@ -27,7 +27,11 @@ const HeaderBar = () => {
 
           <Text>React solution</Text>
         </HStack>
-        <Link color="teal" href="#">
+        <Link
+          color="teal"
+          href="https://github.com/CursedWizard/nextjs-test"
+          isExternal={true}
+        >
           <HStack align="center">
             <Image src="/github.svg" alt="react" width="20px" height="20px" />
             <Text>Source code</Text>
