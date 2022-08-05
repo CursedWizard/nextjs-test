@@ -179,7 +179,6 @@ export const VacancyDialog = memo(
   }
 );
 
-
 const PhoneInput = ({
   errors,
   touched,
@@ -204,4 +203,6 @@ const PhoneInput = ({
     </FormControl>
   );
 };
+
+VacancyDialog.displayName = "VacancyDialog";
 

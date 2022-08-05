@@ -28,7 +28,7 @@ const getKnownSalary = (vacancy: VacancyType) => {
   return vacancy.salary_volume_ex
 }
 
-export const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, onOpen }) => {
+const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, onOpen }) => {
   return (
     <Card
       key={vacancy.vacancy_id}
@@ -144,3 +144,5 @@ export const VacanciesList: React.FC<VacanciesProps> = ({ vacancies }) => {
   );
 };
 
+VacanciesList.displayName = "VacanciesList";
+VacancyGrid.displayName = "VacancyGrid";
