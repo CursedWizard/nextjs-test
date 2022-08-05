@@ -91,7 +91,7 @@ export const VacancyDialog = memo(
         isCentered
       >
         <AlertDialogOverlay />
-        <AlertDialogContent>
+        <AlertDialogContent mx={6}>
           <AlertDialogHeader fontSize="2xl">Откликнуться</AlertDialogHeader>
           <AlertDialogCloseButton mt="8px" />
           <form onSubmit={handleSubmit}>
